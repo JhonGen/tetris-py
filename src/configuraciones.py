@@ -1,12 +1,10 @@
 # configuraciones.py
 import pygame
 
-
-
 pygame.init()
-# Dimensiones de la ventana del juego
 
-WIDTH, HEIGHT = 400, 600
+# Dimensiones de la ventana del juego
+WINDOW_WIDTH, WINDOW_HEIGHT = 800, 600
 
 CONTROLS = {
     'move_left': pygame.K_LEFT,

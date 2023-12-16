@@ -1,17 +1,25 @@
 # tetris.py
 import pygame
 import random
-from src.configuraciones import WIDTH, HEIGHT, CONTROLS
+from src.configuraciones import WINDOW_WIDTH, WINDOW_HEIGHT, CONTROLS
 
 class Tetris:
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.grid = [[0] * 10 for _ in range(20)]  # Cuadrícula 10x20
+    def __init__(self, window_width, window_height):
+        self.width = 10  # Ancho de la grilla
+        self.height = 20  # Altura de la grilla
+        self.block_size = min(window_width // self.width, window_height // self.height)  # Tamaño del bloque
+        self.grid = [[0] * self.width for _ in range(self.height)]  # Cuadrícula 10x20
         self.current_block = self.generate_block()
         self.current_block_x = 0  # Posición en el eje x
         self.current_block_y = 0  # Posición en el eje y
         self.key_pressed = {}  # Diccionario para rastrear las teclas presionadas
+        self.level = 1
+        self.score = 0
+        self.lines = 0
+
+        # Calcula la posición de la grilla en el centro de la ventana
+        self.grid_x = (window_width - self.width * self.block_size) // 2
+        self.grid_y = (window_height - self.height * self.block_size) // 2
 
     def generate_block(self):
         # Implementa la lógica para generar bloques aleatorios
@@ -66,25 +74,61 @@ class Tetris:
 
     def draw(self, window):
         window.fill((255, 255, 255))
+        
+        # Dibuja el borde de la grilla
+        pygame.draw.rect(window, (0, 0, 0), (self.grid_x - 1, self.grid_y - 1, self.width * self.block_size + 2, self.height * self.block_size + 2), 1)
+
+        # Dibuja la grilla en el centro
         self.draw_grid(window)
+
+        # Dibuja la pieza actual
         self.draw_block(window, self.current_block)
 
+        # Dibuja el borde de la tabla de información
+        pygame.draw.rect(window, (0, 0, 0), (self.grid_x + self.width * self.block_size + 19, self.grid_y + 19, 182, 142), 1)
+
+        # Dibuja la información del juego en el costado derecho
+        self.draw_info(window)
+
+        # Actualiza la pantalla después de dibujar todo
+        pygame.display.update()
+
+    def draw_info(self, window):
+        font = pygame.font.Font(None, 36)
+        level_text = font.render(f"Nivel: {self.level}", True, (0, 0, 0))
+        score_text = font.render(f"Puntaje: {self.score}", True, (0, 0, 0))
+        lines_text = font.render(f"Líneas: {self.lines}", True, (0, 0, 0))
+
+        # Posición del texto en el costado derecho, ajustado según grid_x y grid_y
+        text_x = self.grid_x + self.width * self.block_size + 20
+        text_y = self.grid_y + 20
+
+        # Dibuja el borde de la tabla de información
+        pygame.draw.rect(window, (0, 0, 0), (text_x - 1, text_y - 1, 184, 142), 1)
+
+        # Dibuja la información en el costado derecho
+        window.blit(level_text, (text_x, text_y))
+        window.blit(score_text, (text_x, text_y + 40))
+        window.blit(lines_text, (text_x, text_y + 80))
+
     def draw_grid(self, window):
-        block_size = self.width // 10
-        for row in range(20):
-            for col in range(10):
+        # Dibuja los bordes exteriores de la grilla
+        pygame.draw.rect(window, (0, 0, 0), (self.grid_x - 1, self.grid_y - 1, self.width * self.block_size + 2, self.height * self.block_size + 2), 1)
+
+        # Dibuja la grilla sin bordes en las celdas
+        for row in range(self.height):
+            for col in range(self.width):
                 if self.grid[row][col]:
-                    pygame.draw.rect(window, (0, 128, 255), (col * block_size, row * block_size, block_size, block_size), 0)
+                    pygame.draw.rect(window, (0, 128, 255), (self.grid_x + col * self.block_size, self.grid_y + row * self.block_size, self.block_size, self.block_size), 0)
+
 
     def draw_block(self, window, block):
-        block_size = self.width // 10
         for row in range(len(block)):
             for col in range(len(block[0])):
                 if block[row][col]:
-                    x = col + self.current_block_x
-                    y = row + self.current_block_y
-                    if 0 <= x < 10 and 0 <= y < 20:
-                        pygame.draw.rect(window, (255, 0, 0), (x * block_size, y * block_size, block_size, block_size), 0)
+                    x = self.grid_x + (self.current_block_x + col) * self.block_size
+                    y = self.grid_y + (self.current_block_y + row) * self.block_size
+                    pygame.draw.rect(window, (255, 0, 0), (x, y, self.block_size, self.block_size), 0)
 
     def handle_keys(self):
         for action, key in CONTROLS.items():
