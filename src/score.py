@@ -41,6 +41,8 @@ class Score:
                 # Combo points
                 self.points += 50 * self.combo_counter * level_multiplier
                 self.combo_counter += completed_lines
+            else:
+                self.combo_flag = 1
         else:
             self.combo_flag = 0
         # Additional logic for move types

@@ -54,19 +54,20 @@ class Tetris:
 
     def _handle_piece_landing(self, move_type):
         self._update_grid()
-
-        if move_type == "Hard Drop":
-            self.hard_drop_distance = self._calculate_hard_drop_distance()
-
         completed_lines = self._clear_lines()
-        
+
         if completed_lines >= 1:
             perfect_clear = self._check_perfect_clear()
             self.score.update_score(completed_lines, move_type, perfect_clear, self.hard_drop_distance)
         else:
-            self.score.update_score(completed_lines, move_type,  0, self.hard_drop_distance)
-        
+            self.score.update_score(completed_lines, move_type, 0, self.hard_drop_distance)
+
+        print(f"Move type: {move_type}")
+        print(f"Hard drop distance: {self.hard_drop_distance}")
+        print(f"Lines cleared: {completed_lines}")
+
         self.current_piece = self._generate_random_piece()
+
 
     def _check_perfect_clear(self):
         return all(all(cell == 0 for cell in row) for row in self.grid)
@@ -88,11 +89,10 @@ class Tetris:
 
         final_position = self.current_piece.position
         self.hard_drop_distance = final_position[1] - original_position[1]
+        print(f"hard_drop_distance obtenida: {self.hard_drop_distance}")
 
-        # Actualiza la posición de la pieza antes de llamar a _piece_lands
-        self.current_piece.position = original_position
-
-        self._piece_lands("Hard Drop")
+        # Asegura que la pieza se coloque correctamente después del "Hard Drop"
+        self._handle_piece_landing("Hard Drop")
 
     def _calculate_hard_drop_distance(self):
         # Calcular la distancia de la caída al realizar un "Hard Drop"
@@ -138,7 +138,7 @@ class Tetris:
             self._draw_grid(screen)
 
             pygame.display.flip()
-            self.clock.tick(30)
+            self.clock.tick(5)
 
         pygame.quit()
 
