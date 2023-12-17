@@ -1,198 +1,147 @@
 # tetris.py
 import pygame
 import random
-from src.configuraciones import WINDOW_WIDTH, WINDOW_HEIGHT, CONTROLS
+from src.tetromino import Tetromino, I_piece, O_piece
+from src.score import Score
+from src.settings import CONTROLS
 
 class Tetris:
-    def __init__(self, window_width, window_height):
-        self.width = 10  # Ancho de la grilla
-        self.height = 20  # Altura de la grilla
-        self.block_size = min(window_width // self.width, window_height // self.height)  # Tamaño del bloque
-        self.grid = [[0] * self.width for _ in range(self.height)]  # Cuadrícula 10x20
-        self.current_block = self.generate_block()
-        self.current_block_x = 0  # Posición en el eje x
-        self.current_block_y = 0  # Posición en el eje y
-        self.key_pressed = {}  # Diccionario para rastrear las teclas presionadas
-        self.level = 1
-        self.score = 0
-        self.lines = 0
+    def __init__(self):
+        self.controls = CONTROLS
+        self.grid = [[0] * 10 for _ in range(20)]
+        self.current_piece = self._generate_random_piece()
+        self.clock = pygame.time.Clock()
+        self.FALL_SPEED = 500
+        pygame.time.set_timer(pygame.USEREVENT + 1, self.FALL_SPEED)
+        self.score = Score()
+        self.hard_drop_distance = 0
 
-        # Calcula la posición de la grilla en el centro de la ventana
-        self.grid_x = (window_width - self.width * self.block_size) // 2
-        self.grid_y = (window_height - self.height * self.block_size) // 2
 
-    def generate_block(self):
-        # Implementa la lógica para generar bloques aleatorios
-        block_types = [
-            [[1, 1, 1, 1]],  # Linea
-            [[1, 1, 1], [0, 1, 0]],  # T
-            [[1, 1, 1], [1, 0, 0]],  # L
-            [[1, 1, 1], [0, 0, 1]],  # J
-            [[1, 1], [1, 1]],  # Cuadrado
-        ]
-        block = random.choice(block_types)
-        return block
+    def _generate_random_piece(self):
+        pieces = [O_piece, I_piece]
+        piece_class = random.choice(pieces)
+        shape = piece_class.shape
+        color = piece_class.color
+        return Tetromino(shape=shape, color=color, position=(3, 0))
 
-    def check_collision(self):
-        for row in range(len(self.current_block)):
-            for col in range(len(self.current_block[0])):
-                if self.current_block[row][col]:
-                    x = col + self.current_block_x
-                    y = row + self.current_block_y
-                    if not (0 <= x < 10 and 0 <= y < 20) or (y >= 0 and self.grid[y][x]):
-                        return True
-        return False
+    def _draw_grid(self, screen):
+        cell_size = 30
+        for row in range(20):
+            for col in range(10):
+                pygame.draw.rect(screen, (255, 255, 255), (col * cell_size, row * cell_size, cell_size, cell_size), 1)
+                if self.grid[row][col] != 0:
+                    pygame.draw.rect(screen, self.grid[row][col], (col * cell_size + 1, row * cell_size + 1, cell_size - 2, cell_size - 2))
 
-    def place_block(self):
-        for row in range(len(self.current_block)):
-            for col in range(len(self.current_block[0])):
-                if self.current_block[row][col]:
-                    x = col + self.current_block_x
-                    y = row + self.current_block_y
-                    if 0 <= y < 20 and 0 <= x < 10:
-                        self.grid[y][x] = 1
-                    else:
-                        print(f"Attempted to place block outside grid at ({x}, {y})")
-                        self.current_block_y = min(20 - len(self.current_block), self.current_block_y)
+        # Dibujar la pieza actual
+        screen.blit(self.current_piece.surface, (self.current_piece.position[0] * cell_size, self.current_piece.position[1] * cell_size))
 
-    def update(self):
-        self.handle_keys()
-        self.current_block_y += 1
-        if self.check_collision():
-            print("Block landed or collided")
-            self.place_block()
-            self.clear_lines()
-            self.current_block = self.generate_block()
-            self.current_block_x = 0
-            self.current_block_y = 0
+    def _update_grid(self):
+        for row_offset, row in enumerate(self.current_piece.shape):
+            for col_offset, cell in enumerate(row):
+                if cell:
+                    new_row = self.current_piece.position[1] + row_offset
+                    new_col = self.current_piece.position[0] + col_offset
+                    if 0 <= new_row < len(self.grid) and 0 <= new_col < len(self.grid[0]):
+                        self.grid[new_row][new_col] = 0
 
-    def clear_lines(self):
-        lines_to_clear = [i for i, row in enumerate(self.grid) if all(row)]
-        for line in lines_to_clear:
-            del self.grid[line]
+        for row_offset, row in enumerate(self.current_piece.shape):
+            for col_offset, cell in enumerate(row):
+                if cell:
+                    new_row = self.current_piece.position[1] + row_offset
+                    new_col = self.current_piece.position[0] + col_offset
+                    if 0 <= new_row < len(self.grid) and 0 <= new_col < len(self.grid[0]):
+                        self.grid[new_row][new_col] = self.current_piece.color
+
+    def _handle_piece_landing(self, move_type):
+        self._update_grid()
+
+        if move_type == "Hard Drop":
+            self.hard_drop_distance = self._calculate_hard_drop_distance()
+
+        completed_lines = self._clear_lines()
+        
+        if completed_lines >= 1:
+            perfect_clear = self._check_perfect_clear()
+            self.score.update_score(completed_lines, move_type, perfect_clear, self.hard_drop_distance)
+        else:
+            self.score.update_score(completed_lines, move_type,  0, self.hard_drop_distance)
+        
+        self.current_piece = self._generate_random_piece()
+
+    def _check_perfect_clear(self):
+        return all(all(cell == 0 for cell in row) for row in self.grid)
+
+    def _clear_lines(self):
+        completed_lines = [row for row in self.grid if all(cell != 0 for cell in row)]
+
+        for row in completed_lines:
+            self.grid.remove(row)
             self.grid.insert(0, [0] * 10)
 
-    def draw(self, window):
-        window.fill((255, 255, 255))
-        
-        # Dibuja el borde de la grilla
-        pygame.draw.rect(window, (0, 0, 0), (self.grid_x - 1, self.grid_y - 1, self.width * self.block_size + 2, self.height * self.block_size + 2), 1)
-
-        # Dibuja la grilla en el centro
-        self.draw_grid(window)
-
-        # Dibuja la pieza actual
-        self.draw_block(window, self.current_block)
-
-        # Dibuja el borde de la tabla de información
-        pygame.draw.rect(window, (0, 0, 0), (self.grid_x + self.width * self.block_size + 19, self.grid_y + 19, 182, 142), 1)
-
-        # Dibuja la información del juego en el costado derecho
-        self.draw_info(window)
-
-        # Actualiza la pantalla después de dibujar todo
-        pygame.display.update()
-
-    def draw_info(self, window):
-        font = pygame.font.Font(None, 36)
-        level_text = font.render(f"Nivel: {self.level}", True, (0, 0, 0))
-        score_text = font.render(f"Puntaje: {self.score}", True, (0, 0, 0))
-        lines_text = font.render(f"Líneas: {self.lines}", True, (0, 0, 0))
-
-        # Posición del texto en el costado derecho, ajustado según grid_x y grid_y
-        text_x = self.grid_x + self.width * self.block_size + 20
-        text_y = self.grid_y + 20
-
-        # Dibuja el borde de la tabla de información
-        pygame.draw.rect(window, (0, 0, 0), (text_x - 1, text_y - 1, 184, 142), 1)
-
-        # Dibuja la información en el costado derecho
-        window.blit(level_text, (text_x, text_y))
-        window.blit(score_text, (text_x, text_y + 40))
-        window.blit(lines_text, (text_x, text_y + 80))
-
-    def draw_grid(self, window):
-        # Dibuja los bordes exteriores de la grilla
-        pygame.draw.rect(window, (0, 0, 0), (self.grid_x - 1, self.grid_y - 1, self.width * self.block_size + 2, self.height * self.block_size + 2), 1)
-
-        # Dibuja la grilla sin bordes en las celdas
-        for row in range(self.height):
-            for col in range(self.width):
-                if self.grid[row][col]:
-                    pygame.draw.rect(window, (0, 128, 255), (self.grid_x + col * self.block_size, self.grid_y + row * self.block_size, self.block_size, self.block_size), 0)
-
-
-    def draw_block(self, window, block):
-        for row in range(len(block)):
-            for col in range(len(block[0])):
-                if block[row][col]:
-                    x = self.grid_x + (self.current_block_x + col) * self.block_size
-                    y = self.grid_y + (self.current_block_y + row) * self.block_size
-                    pygame.draw.rect(window, (255, 0, 0), (x, y, self.block_size, self.block_size), 0)
-
-    def handle_keys(self):
-        for action, key in CONTROLS.items():
-            if self.key_pressed.get(action, False):
-                if action == 'move_left':
-                    self.move_left()
-                elif action == 'move_right':
-                    self.move_right()
-                elif action == 'move_down':
-                    self.move_down()
-                elif action == 'rotate_clockwise':
-                    self.rotate_clockwise()
-                elif action == 'hard_drop':
-                    self.hard_drop()
-                elif action == 'rotate_anticlockwise':
-                    self.rotate_anticlockwise()
-                elif action == 'hold':
-                    self.hold()
-
-    def move_left(self):
-        self.current_block_x -= 1
-        if self.check_collision():
-            self.current_block_x += 1
-
-    def move_right(self):
-        self.current_block_x += 1
-        if self.check_collision():
-            self.current_block_x -= 1
-
-    def move_down(self):
-        self.current_block_y += 1
-        if self.check_collision():
-            self.current_block_y -= 1
-
-    def rotate_clockwise(self):
-        rotated_block = list(zip(*reversed(self.current_block)))
-        if not self.check_collision_with_rotated(rotated_block):
-            self.current_block = rotated_block
-
-    def rotate_anticlockwise(self):
-        rotated_block = list(zip(*self.current_block[::-1]))
-        if not self.check_collision_with_rotated(rotated_block):
-            self.current_block = rotated_block
-
-    def check_collision_with_rotated(self, rotated_block):
-        for row in range(len(rotated_block)):
-            for col in range(len(rotated_block[0])):
-                if rotated_block[row][col]:
-                    x = col + self.current_block_x
-                    y = row + self.current_block_y
-                    if not (0 <= x < 10 and 0 <= y < 20) or (y >= 0 and self.grid[y][x]):
-                        return True
-        return False
-
+        return len(completed_lines)
+    
     def hard_drop(self):
-        while not self.check_collision():
-            self.current_block_y += 1
-        self.current_block_y -= 1
-        self.place_block()  # Coloca la pieza en su posición final
-        self.clear_lines()
-        self.current_block = self.generate_block()
-        self.current_block_x = 0
-        self.current_block_y = 0
+        original_position = self.current_piece.position
 
-    def hold(self):
-        # Implementa la lógica para retener la pieza
-        pass
+        while self.current_piece.move_down(self.grid):
+            pass
+
+        final_position = self.current_piece.position
+        self.hard_drop_distance = final_position[1] - original_position[1]
+
+        # Actualiza la posición de la pieza antes de llamar a _piece_lands
+        self.current_piece.position = original_position
+
+        self._piece_lands("Hard Drop")
+
+    def _calculate_hard_drop_distance(self):
+        # Calcular la distancia de la caída al realizar un "Hard Drop"
+        initial_row = self.current_piece.position[1]
+        final_row = self.current_piece.get_previous_position()[1]
+        return final_row - initial_row
+        
+    def handle_input(self):
+        keys = pygame.key.get_pressed()
+        if keys[self.controls['move_left']]:
+            self.current_piece.move_left(self.grid)
+        elif keys[self.controls['move_right']]:
+            self.current_piece.move_right(self.grid)
+        elif keys[self.controls['move_down']]:
+            if not self.current_piece.move_down(self.grid):
+                self._handle_piece_landing("Soft Drop")
+        elif keys[self.controls['rotate_clockwise']]:
+            self.current_piece.rotate_clockwise(self.grid)
+        elif keys[self.controls['hard_drop']]:
+            self.hard_drop()
+        elif keys[self.controls['rotate_anticlockwise']]:
+            self.current_piece.rotate_counterclockwise()
+        elif keys[self.controls['hold']]:
+            self.hold()
+        
+    def run(self):
+        pygame.init()
+        screen = pygame.display.set_mode((800, 600))
+        pygame.display.set_caption('Tetris')
+
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.USEREVENT + 1:
+                    if not self.current_piece.move_down(self.grid):
+                        self._handle_piece_landing("Soft Drop")
+
+            self.handle_input()
+
+            screen.fill((0, 0, 0))
+            self._draw_grid(screen)
+
+            pygame.display.flip()
+            self.clock.tick(30)
+
+        pygame.quit()
+
+if __name__ == "__main__":
+    tetris_game = Tetris()
+    tetris_game.run()
