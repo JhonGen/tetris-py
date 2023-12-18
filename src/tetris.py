@@ -5,6 +5,7 @@ import sys
 from src.tetromino import Tetromino, I_piece, O_piece, T_piece, Z_piece, J_piece, L_piece, S_piece
 from src.score import Score
 from src.settings import CONTROLS
+from src.sound_manager import SoundManager
 
 class Tetris:
     def __init__(self):
@@ -23,6 +24,9 @@ class Tetris:
         self.can_hold = True  # Permite retener solo una vez por turno
         self.frame_counter = 0
         self.last_key_process_time = pygame.time.get_ticks()
+        self.sound_manager = SoundManager()
+        self.sound_manager.play_tetris_music(loop=True)
+        self.game_over_music_played = False
 
     def _generate_random_piece(self):
         pieces = [O_piece, I_piece, T_piece, Z_piece, J_piece, L_piece, S_piece]
@@ -128,6 +132,10 @@ class Tetris:
         screen.blit(text_small2, (250, 400))
 
     def game_over(self):
+        if not self.game_over_music_played:
+            self.sound_manager.play_game_over_music()
+            self.game_over_music_played = True
+
         self.game_over_flag = True
 
 
@@ -269,6 +277,7 @@ class Tetris:
             else:
                 self._draw_game_over(screen)
 
+                
             pygame.display.flip()
             self.clock.tick(30)  # Mantiene la velocidad constante
 
