@@ -45,6 +45,7 @@ class Score:
                 self.combo_flag = 1
         else:
             self.combo_flag = 0
+            self.combo_counter = 0
         # Additional logic for move types
         if move_type == "Soft Drop":
             self.points += 1
@@ -56,7 +57,7 @@ class Score:
         self.total_lines_cleared += completed_lines
 
         # Update current level based on total lines cleared
-        self.current_level = (self.total_lines_cleared // 10)
+        self.current_level = (self.total_lines_cleared // 10) +1
 
         # Print statements for verification
         print(f"Completed Lines: {completed_lines}")

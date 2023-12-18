@@ -20,6 +20,25 @@ class Tetromino:
                     pygame.draw.rect(surface, self.color, (col * 30, row * 30, 30, 30))
         return surface
 
+    def draw_tetromino(self):
+        cell_size = 30
+        block_size = cell_size - 2  # Ajusta según sea necesario
+        surface = pygame.Surface((len(self.shape[0]) * cell_size, len(self.shape) * cell_size), pygame.SRCALPHA)
+
+        for row_offset, row in enumerate(self.shape):
+            for col_offset, cell in enumerate(row):
+                if cell:
+                    block_x, block_y = col_offset * cell_size, row_offset * cell_size
+                    pygame.draw.rect(surface, self.color, (block_x, block_y, block_size, block_size))
+                    
+                    # Dibuja líneas negras en los bordes del bloque
+                    pygame.draw.line(surface, (0, 0, 0), (block_x, block_y), (block_x + block_size, block_y), 2)
+                    pygame.draw.line(surface, (0, 0, 0), (block_x, block_y), (block_x, block_y + block_size), 2)
+                    pygame.draw.line(surface, (0, 0, 0), (block_x + block_size, block_y), (block_x + block_size, block_y + block_size), 2)
+                    pygame.draw.line(surface, (0, 0, 0), (block_x, block_y + block_size), (block_x + block_size, block_y + block_size), 2)
+
+        return surface
+
     def rotate_clockwise(self, grid):
         rotated_shape = self._rotate_matrix(self.shape)
         if self._check_collision(grid, offset=(0, 0), new_shape=rotated_shape):
@@ -97,19 +116,20 @@ L_SHAPE = [[1, 0, 0], [1, 1, 1]]
 J_SHAPE = [[0, 0, 1], [1, 1, 1]]
 
 # Colores en formato RGB
-CYAN = (0, 255, 255)
-YELLOW = (255, 255, 0)
-MAGENTA = (255, 0, 255)
-GREEN = (0, 255, 0)
-RED = (255, 0, 0)
+LIGHT_BLUE = (173, 216, 230)
+DARK_BLUE = (0, 0, 128)
 ORANGE = (255, 165, 0)
-BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
+GREEN = (0, 128, 0)
+RED = (255, 0, 0)
+MAGENTA = (255, 0, 255)
 
 # Crea instancias de Tetromino con las piezas y colores definidos
-I_piece = Tetromino(I_SHAPE, CYAN)
+I_piece = Tetromino(I_SHAPE, LIGHT_BLUE)
 O_piece = Tetromino(O_SHAPE, YELLOW)
 T_piece = Tetromino(T_SHAPE, MAGENTA)
 S_piece = Tetromino(S_SHAPE, GREEN)
 Z_piece = Tetromino(Z_SHAPE, RED)
 L_piece = Tetromino(L_SHAPE, ORANGE)
-J_piece = Tetromino(J_SHAPE, BLUE)
+J_piece = Tetromino(J_SHAPE, DARK_BLUE)
+
