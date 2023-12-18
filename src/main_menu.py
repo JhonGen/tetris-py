@@ -40,35 +40,44 @@ class MainMenu:
 
     def show_controls(self):
         controls_window = tk.Tk()
-        controls_window.title("Controls")  # Cambia el título de la ventana emergente
+        controls_window.title("Keypad")  # Cambia el título de la ventana emergente
         controls_frame = ControlsFrame(controls_window)
         controls_frame.pack()
         controls_window.mainloop()
 
     def draw_menu(self):
-        font = pygame.font.Font(None, 74)
-        text = font.render("Main Menu", True, (255, 255, 255))
-        
-        # Incrementa el ancho de los botones horizontalmente
-        button_width, button_height = 250, 100
+        font = pygame.font.Font("src/fonts/Tetris.ttf", 74)
+        title_font = pygame.font.Font("src/fonts/tetris-block-regular.ttf", 74)
 
-        play_button = pygame.Rect(275, 200, button_width, button_height)
+        text_surface = title_font.render("TETRIS", True, (255, 255, 255))
+        self.screen.blit(text_surface, (50, 50))  # Ajusta la posición del título
+
+        # Incrementa el ancho de los botones horizontalmente
+        button_width, button_height = 375, 100
+
+        # Botón "Play"
+        play_button = pygame.Rect(200, 200, button_width, button_height)
         pygame.draw.rect(self.screen, (0, 255, 0), play_button)
-        play_text = font.render("Play", True, (0, 0, 0))  # Etiqueta del botón "Play"
+        pygame.draw.rect(self.screen, (0, 200, 0), play_button, border_radius=15)  # Bordes redondeados
+
+        play_text = font.render("Play", True, (0, 0, 0))
         self.screen.blit(play_text, (play_button.x + 60, play_button.y + 35))
 
-        controls_button = pygame.Rect(275, 350, button_width, button_height)
+        # Botón "Controls"
+        controls_button = pygame.Rect(200, 350, button_width, button_height)
         pygame.draw.rect(self.screen, (0, 255, 0), controls_button)
-        controls_text = font.render("Controls", True, (0, 0, 0))  # Etiqueta del botón "Controls"
+        pygame.draw.rect(self.screen, (0, 200, 0), controls_button, border_radius=15)  # Bordes redondeados
+
+        controls_text = font.render("Keypad", True, (0, 0, 0))
         self.screen.blit(controls_text, (controls_button.x + 25, controls_button.y + 35))
 
         # Botón "Exit"
-        exit_button = pygame.Rect(275, 500, button_width, button_height)
+        exit_button = pygame.Rect(200, 500, button_width, button_height)
         pygame.draw.rect(self.screen, (255, 0, 0), exit_button)
+        pygame.draw.rect(self.screen, (200, 0, 0), exit_button, border_radius=15)  # Bordes redondeados
+
         exit_text = font.render("Exit", True, (0, 0, 0))
         self.screen.blit(exit_text, (exit_button.x + 60, exit_button.y + 35))
-
-        self.screen.blit(text, (300, 50))
 
 
     def start_game(self):
@@ -79,6 +88,7 @@ class MainMenu:
     def exit_game(self):
         pygame.quit()
         sys.exit()
+
 if __name__ == "__main__":
     main_menu = MainMenu()
     main_menu.show_menu()

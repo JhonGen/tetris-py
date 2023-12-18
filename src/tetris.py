@@ -2,6 +2,8 @@
 import pygame
 import random
 import sys
+from collections import deque
+
 from src.tetromino import Tetromino, I_piece, O_piece, T_piece, Z_piece, J_piece, L_piece, S_piece
 from src.score import Score
 from src.settings import CONTROLS
@@ -11,14 +13,17 @@ class Tetris:
     def __init__(self):
         self.controls = CONTROLS
         self.grid = [[0] * 10 for _ in range(20)]
-        self.current_piece = self._generate_random_piece()
+        self.next_pieces_queue = deque(maxlen=3) 
+        self._fill_next_pieces_queue()
+        self.current_piece = self.next_pieces_queue.popleft()
+        self.next_pieces_queue.append(self._generate_random_piece())
         self.clock = pygame.time.Clock()
         self.FALL_SPEED = 500
         pygame.time.set_timer(pygame.USEREVENT + 1, self.FALL_SPEED)
         self.score = Score()
         self.hard_drop_distance = 0
-        self.next_piece = self._generate_random_piece()
-        self.border_size = 2
+
+        self.border_size = 1
         self.game_over_flag = False
         self.held_piece = None
         self.can_hold = True  # Permite retener solo una vez por turno
@@ -34,13 +39,17 @@ class Tetris:
         shape = piece_class.shape
         color = piece_class.color
         return Tetromino(shape=shape, color=color, position=(3, 0))
+    
+    def _fill_next_pieces_queue(self):
+        for _ in range(3):
+            self.next_pieces_queue.append(self._generate_random_piece())
 
     def hold(self):
         if self.can_hold:
             if self.held_piece is None:
                 self.held_piece = self.current_piece
-                self.current_piece = self.next_piece
-                self.next_piece = self._generate_random_piece()
+                self.current_piece = self.next_pieces_queue.popleft()
+                self.next_pieces_queue.append(self._generate_random_piece())
             else:
                 # Intercambia la pieza actual con la pieza en espera
                 self.current_piece, self.held_piece = self.held_piece, self.current_piece
@@ -64,28 +73,36 @@ class Tetris:
         # Dibujar la pieza actual
         screen.blit(self.current_piece.draw_tetromino(), (self.current_piece.position[0] * cell_size, self.current_piece.position[1] * cell_size))
 
-        # Dibujar la siguiente pieza
-        next_piece_surface = pygame.Surface((6 * cell_size, 6 * cell_size))  # Ajusta el tamaño del cuadro
-
-        # Dibuja un borde alrededor del área de la pieza siguiente
-        pygame.draw.rect(screen, (255, 255, 255), (500 - self.border_size, 250 - self.border_size, 6 * cell_size + 2 * self.border_size, 6 * cell_size + 2 * self.border_size), self.border_size)
-
-        next_piece_x = 500 + (3 * cell_size) - (self.next_piece.width * cell_size // 2 if hasattr(self.next_piece, 'width') else len(self.next_piece.shape[0]) * cell_size // 2)  # Centra la pieza en el cuadro
-        next_piece_y = 250 + (3 * cell_size) - (self.next_piece.height * cell_size // 2 if hasattr(self.next_piece, 'height') else len(self.next_piece.shape) * cell_size // 2)
-
-        for row_offset, row in enumerate(self.next_piece.shape):
-            for col_offset, cell in enumerate(row):
-                if cell:
-                    pygame.draw.rect(next_piece_surface, self.next_piece.color, (col_offset * cell_size, row_offset * cell_size, cell_size, cell_size))
-
-        screen.blit(next_piece_surface, (next_piece_x, next_piece_y))
+        # Dibujar las tres piezas siguientes
+        next_pieces_surface = pygame.Surface((6 * cell_size, 18 * cell_size))  # Ajusta el tamaño del cuadro
+        # Añade el título "Next Pieces"
+        font = pygame.font.Font(None, 24)
+        next_pieces_title = font.render("Next Pieces", True, (255, 255, 255))
+        screen.blit(next_pieces_title, (320, 40))  # Ajusta la posición según sea necesario
         
+        for i, next_piece in enumerate(list(self.next_pieces_queue)[:3]):
+            next_piece_x = 320 + (3 * cell_size) - (next_piece.width * cell_size // 2 if hasattr(next_piece, 'width') else len(next_piece.shape[0]) * cell_size // 2)  # Centra la pieza en el cuadro
+            next_piece_y = 150 + i * 120 + (3 * cell_size) - (next_piece.height * cell_size // 2 if hasattr(next_piece, 'height') else len(next_piece.shape) * cell_size // 2)
+
+            for row_offset, row in enumerate(next_piece.shape):
+                for col_offset, cell in enumerate(row):
+                    if cell:
+                        pygame.draw.rect(next_pieces_surface, next_piece.color, (col_offset * cell_size, (row_offset + i * 4) * cell_size, cell_size, cell_size))
+
+        screen.blit(next_pieces_surface, (320, 70))
+
+        # Dibujar la pieza retenida
         if self.held_piece:
             held_piece_surface = pygame.Surface((6 * cell_size, 6 * cell_size))
-            pygame.draw.rect(screen, (255, 255, 255), (300 - self.border_size, 250 - self.border_size, 6 * cell_size + 2 * self.border_size, 6 * cell_size + 2 * self.border_size), self.border_size)
+            # Añade el título "Held Piece"
+            font = pygame.font.Font(None, 24)
+            held_piece_title = font.render("Held Piece", True, (255, 255, 255))
+            screen.blit(held_piece_title, (520, 40))  # Ajusta la posición según sea necesario
+            # Dibuja un borde alrededor del área de la pieza retenida
+            pygame.draw.rect(screen, (255, 255, 255), (540 - self.border_size, 60 - self.border_size, 6 * cell_size + 2 * self.border_size, 6 * cell_size + 2 * self.border_size), self.border_size)
 
-            held_piece_x = 300 + (3 * cell_size) - (self.held_piece.width * cell_size // 2 if hasattr(self.held_piece, 'width') else len(self.held_piece.shape[0]) * cell_size // 2)
-            held_piece_y = 250 + (3 * cell_size) - (self.held_piece.height * cell_size // 2 if hasattr(self.held_piece, 'height') else len(self.held_piece.shape) * cell_size // 2)
+            held_piece_x = 540 + (3 * cell_size) - (self.held_piece.width * cell_size // 2 if hasattr(self.held_piece, 'width') else len(self.held_piece.shape[0]) * cell_size // 2)
+            held_piece_y = 70 + (3 * cell_size) - (self.held_piece.height * cell_size // 2 if hasattr(self.held_piece, 'height') else len(self.held_piece.shape) * cell_size // 2)
 
             for row_offset, row in enumerate(self.held_piece.shape):
                 for col_offset, cell in enumerate(row):
@@ -93,7 +110,7 @@ class Tetris:
                         pygame.draw.rect(held_piece_surface, self.held_piece.color, (col_offset * cell_size, row_offset * cell_size, cell_size, cell_size))
 
             screen.blit(held_piece_surface, (held_piece_x, held_piece_y))
-        
+
         # Dibujar la sombra
         shadow_position = self.calculate_hard_drop_position()
         shadow_color = (100, 100, 100)  # Puedes ajustar el color de la sombra según tus preferencias
@@ -106,30 +123,31 @@ class Tetris:
 
         # Mostrar información del score, nivel, combo y total de líneas completadas en la pantalla
         font = pygame.font.Font(None, 36)
+        level_font = pygame.font.Font(None, 50)
         score_text = font.render(f"Score: {self.score.total_score}", True, (255, 255, 255))
-        level_text = font.render(f"Level: {self.score.current_level}", True, (255, 255, 255))
+        level_text = level_font.render(f"Level: {self.score.current_level}", True, (255, 255, 255))
         combo_text = font.render(f"Combo: {self.score.combo_counter}", True, (255, 255, 255))
         lines_text = font.render(f"Lines: {self.score.total_lines_cleared}", True, (255, 255, 255))
 
-        screen.blit(score_text, (500, 50))
-        screen.blit(level_text, (500, 100))
-        screen.blit(combo_text, (500, 150))
-        screen.blit(lines_text, (500, 200))
+        screen.blit(score_text, (500, 500))
+        screen.blit(level_text, (500, 450))
+        screen.blit(combo_text, (500, 550))
+        screen.blit(lines_text, (650, 550))
 
         if self.game_over_flag:
             self._draw_game_over(screen)
 
     def _draw_game_over(self, screen):
-        font_large = pygame.font.Font(None, 74)
-        font_small = pygame.font.Font(None, 36)
+        font_large = pygame.font.Font("src/fonts/tetris-block-regular.ttf", 50)
+        font_small = pygame.font.Font("src/fonts/tetris-block-regular.ttf", )
 
         text_large = font_large.render("Game Over", True, (255, 255, 255))
         text_small1 = font_small.render("Press 'R' to restart", True, (255, 255, 255))
         text_small2 = font_small.render("Press 'ESC' to exit", True, (255, 255, 255))
 
-        screen.blit(text_large, (200, 250))
-        screen.blit(text_small1, (250, 350))
-        screen.blit(text_small2, (250, 400))
+        screen.blit(text_large, (170, 250))
+        screen.blit(text_small1, (220, 350))
+        screen.blit(text_small2, (220, 400))
 
     def game_over(self):
         if not self.game_over_music_played:
@@ -179,8 +197,8 @@ class Tetris:
         print(f"Hard drop distance: {self.hard_drop_distance}")
         print(f"Lines cleared: {completed_lines}")
 
-        self.current_piece = self.next_piece  # Asigna la siguiente pieza como la pieza actual
-        self.next_piece = self._generate_random_piece()  # Genera una nueva pieza siguiente
+        self.current_piece = self.next_pieces_queue.popleft()  # Obtiene la siguiente pieza de la cola
+        self.next_pieces_queue.append(self._generate_random_piece())  # Agrega una nueva pieza a la cola
         self.can_hold = True
 
     def _check_perfect_clear(self):

@@ -7,7 +7,8 @@ class Score:
         self.total_score = 0
         self.combo_flag = 0
         self.combo_counter = 0
-
+        self.max_score = 0
+        
     def update_score(self, completed_lines, move_type, perfect_clear, hard_drop_distance):
         level_multiplier = self.current_level
 
