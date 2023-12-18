@@ -138,6 +138,11 @@ class Tetris:
 
         self.game_over_flag = True
 
+    def go_to_menu(self):
+        pygame.mixer.quit()  # Cierra el sistema de mezcla para evitar conflictos con pygame.mixer en MainMenu
+        from src.main_menu import MainMenu  # Importa aquí para evitar la dependencia circular
+        main_menu = MainMenu()
+        main_menu.show_menu()
 
     def _update_grid(self):
         for row_offset, row in enumerate(self.current_piece.shape):
@@ -246,6 +251,8 @@ class Tetris:
             # Salir del juego si se presiona 'ESC'
             pygame.quit()
             sys.exit()
+        elif keys[self.controls['go_to_menu']]:  # Agrega la lógica para ir al menú principal
+            self.go_to_menu()
         
         self.last_key_process_time = current_time
 

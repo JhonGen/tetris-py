@@ -1,8 +1,6 @@
 # settings.py
 import pygame
 
-pygame.init()
-
 # Dimensiones de la ventana del juego
 WINDOW_WIDTH, WINDOW_HEIGHT = 800, 600
 
@@ -16,4 +14,5 @@ CONTROLS = {
     'hold': pygame.K_c,
     'restart': pygame.K_r,
     'exit': pygame.K_ESCAPE,
+    'go_to_menu': pygame.K_m
 }
