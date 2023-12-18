@@ -14,4 +14,6 @@ CONTROLS = {
     'hard_drop': pygame.K_SPACE,
     'rotate_anticlockwise': pygame.K_z,
     'hold': pygame.K_c,
+    'restart': pygame.K_r,
+    'exit': pygame.K_ESCAPE,
 }

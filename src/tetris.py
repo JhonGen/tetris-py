@@ -1,6 +1,7 @@
 # tetris.py
 import pygame
 import random
+import sys
 from src.tetromino import Tetromino, I_piece, O_piece, T_piece, Z_piece, J_piece, L_piece, S_piece
 from src.score import Score
 from src.settings import CONTROLS
@@ -17,6 +18,7 @@ class Tetris:
         self.hard_drop_distance = 0
         self.next_piece = self._generate_random_piece()
         self.border_size = 2
+        self.game_over_flag = False
 
 
 
@@ -60,8 +62,6 @@ class Tetris:
 
         screen.blit(next_piece_surface, (next_piece_x, next_piece_y))
 
-
-
         # Mostrar información del score, nivel, combo y total de líneas completadas en la pantalla
         font = pygame.font.Font(None, 36)
         score_text = font.render(f"Score: {self.score.total_score}", True, (255, 255, 255))
@@ -73,6 +73,24 @@ class Tetris:
         screen.blit(level_text, (500, 100))
         screen.blit(combo_text, (500, 150))
         screen.blit(lines_text, (500, 200))
+
+        if self.game_over_flag:
+            self._draw_game_over(screen)
+
+    def _draw_game_over(self, screen):
+        font_large = pygame.font.Font(None, 74)
+        font_small = pygame.font.Font(None, 36)
+
+        text_large = font_large.render("Game Over", True, (255, 255, 255))
+        text_small1 = font_small.render("Press 'R' to restart", True, (255, 255, 255))
+        text_small2 = font_small.render("Press 'ESC' to exit", True, (255, 255, 255))
+
+        screen.blit(text_large, (200, 250))
+        screen.blit(text_small1, (250, 350))
+        screen.blit(text_small2, (250, 400))
+
+    def game_over(self):
+        self.game_over_flag = True
 
 
     def _update_grid(self):
@@ -95,6 +113,10 @@ class Tetris:
     def _handle_piece_landing(self, move_type):
         self._update_grid()
         completed_lines = self._clear_lines()
+
+        if any(cell for cell in self.grid[0]):
+            self.game_over()
+            return
 
         if completed_lines >= 1:
             perfect_clear = self._check_perfect_clear()
@@ -158,6 +180,14 @@ class Tetris:
             self.current_piece.rotate_counterclockwise(self.grid)
         elif keys[self.controls['hold']]:
             self.hold()
+        elif keys[self.controls['restart']]:
+            # Reiniciar el juego al presionar 'R' en cualquier momento
+            self.__init__()
+            self.game_over_flag = False
+        elif keys[self.controls['exit']]:
+            # Salir del juego si se presiona 'ESC'
+            pygame.quit()
+            sys.exit()
         
     def run(self):
         pygame.init()
@@ -172,11 +202,25 @@ class Tetris:
                 elif event.type == pygame.USEREVENT + 1:
                     if not self.current_piece.move_down(self.grid):
                         self._handle_piece_landing("Soft Drop")
+                elif event.type == pygame.KEYDOWN:
+                    if self.game_over_flag:
+                        if event.key == self.controls['restart']:
+                            # Reiniciar el juego al presionar 'R' en la pantalla de Game Over
+                            self.__init__()
+                            self.game_over_flag = False
+                        elif event.key == self.controls['exit']:
+                            # Salir del juego si se presiona 'ESC' en la pantalla de Game Over
+                            pygame.quit()
+                            sys.exit()
 
             self.handle_input()
 
-            screen.fill((0, 0, 0))
-            self._draw_grid(screen)
+            screen.fill((0, 0, 0))  # Limpia la pantalla antes de dibujar
+
+            if not self.game_over_flag:
+                self._draw_grid(screen)
+            else:
+                self._draw_game_over(screen)
 
             pygame.display.flip()
             self.clock.tick(5)
