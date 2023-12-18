@@ -19,7 +19,8 @@ class Tetris:
         self.next_piece = self._generate_random_piece()
         self.border_size = 2
         self.game_over_flag = False
-
+        self.held_piece = None
+        self.can_hold = True  # Permite retener solo una vez por turno
 
 
     def _generate_random_piece(self):
@@ -29,6 +30,18 @@ class Tetris:
         color = piece_class.color
         return Tetromino(shape=shape, color=color, position=(3, 0))
 
+    def hold(self):
+        if self.can_hold:
+            if self.held_piece is None:
+                self.held_piece = self.current_piece
+                self.current_piece = self.next_piece
+                self.next_piece = self._generate_random_piece()
+            else:
+                # Intercambia la pieza actual con la pieza en espera
+                self.current_piece, self.held_piece = self.held_piece, self.current_piece
+                self.current_piece.reset_position()  # Reinicia la posición de la pieza actual
+            self.can_hold = False  # Evita retener más de una vez por turno
+    
     def _draw_grid(self, screen):
         cell_size = 30
         grid_x, grid_y = 0, 0
@@ -61,6 +74,20 @@ class Tetris:
                     pygame.draw.rect(next_piece_surface, self.next_piece.color, (col_offset * cell_size, row_offset * cell_size, cell_size, cell_size))
 
         screen.blit(next_piece_surface, (next_piece_x, next_piece_y))
+        
+        if self.held_piece:
+            held_piece_surface = pygame.Surface((6 * cell_size, 6 * cell_size))
+            pygame.draw.rect(screen, (255, 255, 255), (300 - self.border_size, 250 - self.border_size, 6 * cell_size + 2 * self.border_size, 6 * cell_size + 2 * self.border_size), self.border_size)
+
+            held_piece_x = 300 + (3 * cell_size) - (self.held_piece.width * cell_size // 2 if hasattr(self.held_piece, 'width') else len(self.held_piece.shape[0]) * cell_size // 2)
+            held_piece_y = 250 + (3 * cell_size) - (self.held_piece.height * cell_size // 2 if hasattr(self.held_piece, 'height') else len(self.held_piece.shape) * cell_size // 2)
+
+            for row_offset, row in enumerate(self.held_piece.shape):
+                for col_offset, cell in enumerate(row):
+                    if cell:
+                        pygame.draw.rect(held_piece_surface, self.held_piece.color, (col_offset * cell_size, row_offset * cell_size, cell_size, cell_size))
+
+            screen.blit(held_piece_surface, (held_piece_x, held_piece_y))
 
         # Mostrar información del score, nivel, combo y total de líneas completadas en la pantalla
         font = pygame.font.Font(None, 36)
@@ -130,7 +157,7 @@ class Tetris:
 
         self.current_piece = self.next_piece  # Asigna la siguiente pieza como la pieza actual
         self.next_piece = self._generate_random_piece()  # Genera una nueva pieza siguiente
-
+        self.can_hold = True
 
     def _check_perfect_clear(self):
         return all(all(cell == 0 for cell in row) for row in self.grid)

@@ -9,6 +9,10 @@ class Tetromino:
         self.position = position
         self.surface = self._create_surface()
         self.prev_position = position
+        self.original_position = position 
+
+    def reset_position(self):
+        self.position = self.original_position
 
     def _create_surface(self):
         rows = len(self.shape)
