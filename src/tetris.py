@@ -21,7 +21,8 @@ class Tetris:
         self.game_over_flag = False
         self.held_piece = None
         self.can_hold = True  # Permite retener solo una vez por turno
-
+        self.frame_counter = 0
+        self.last_key_process_time = pygame.time.get_ticks()
 
     def _generate_random_piece(self):
         pieces = [O_piece, I_piece, T_piece, Z_piece, J_piece, L_piece, S_piece]
@@ -88,6 +89,16 @@ class Tetris:
                         pygame.draw.rect(held_piece_surface, self.held_piece.color, (col_offset * cell_size, row_offset * cell_size, cell_size, cell_size))
 
             screen.blit(held_piece_surface, (held_piece_x, held_piece_y))
+        
+        # Dibujar la sombra
+        shadow_position = self.calculate_hard_drop_position()
+        shadow_color = (100, 100, 100)  # Puedes ajustar el color de la sombra según tus preferencias
+        for row_offset, row in enumerate(self.current_piece.shape):
+            for col_offset, cell in enumerate(row):
+                if cell:
+                    shadow_x = (shadow_position[0] + col_offset) * cell_size
+                    shadow_y = (shadow_position[1] + row_offset) * cell_size
+                    pygame.draw.rect(screen, shadow_color, (shadow_x, shadow_y, cell_size, cell_size))
 
         # Mostrar información del score, nivel, combo y total de líneas completadas en la pantalla
         font = pygame.font.Font(None, 36)
@@ -189,8 +200,20 @@ class Tetris:
         initial_row = self.current_piece.position[1]
         final_row = self.current_piece.get_previous_position()[1]
         return final_row - initial_row
-        
+
+    def calculate_hard_drop_position(self):
+        original_position = self.current_piece.position
+        while self.current_piece.move_down(self.grid):
+            pass
+        final_position = self.current_piece.position
+        self.current_piece.position = original_position  # Restaura la posición original
+        return final_position
+
     def handle_input(self):
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_key_process_time < 120:  # Ajusta el valor según sea necesario
+            return
+        
         keys = pygame.key.get_pressed()
         if keys[self.controls['move_left']]:
             self.current_piece.move_left(self.grid)
@@ -216,6 +239,13 @@ class Tetris:
             pygame.quit()
             sys.exit()
         
+        self.last_key_process_time = current_time
+
+    def _update_fall_speed(self):
+        # Actualiza la velocidad de caída en función del nivel
+        level = self.score.current_level
+        self.frames_per_drop = int((0.8 - ((level - 1) * 0.007)) ** (level - 1) * 60)  # Asume 60 FPS
+
     def run(self):
         pygame.init()
         screen = pygame.display.set_mode((800, 600))
@@ -229,16 +259,6 @@ class Tetris:
                 elif event.type == pygame.USEREVENT + 1:
                     if not self.current_piece.move_down(self.grid):
                         self._handle_piece_landing("Soft Drop")
-                elif event.type == pygame.KEYDOWN:
-                    if self.game_over_flag:
-                        if event.key == self.controls['restart']:
-                            # Reiniciar el juego al presionar 'R' en la pantalla de Game Over
-                            self.__init__()
-                            self.game_over_flag = False
-                        elif event.key == self.controls['exit']:
-                            # Salir del juego si se presiona 'ESC' en la pantalla de Game Over
-                            pygame.quit()
-                            sys.exit()
 
             self.handle_input()
 
@@ -250,7 +270,16 @@ class Tetris:
                 self._draw_game_over(screen)
 
             pygame.display.flip()
-            self.clock.tick(5)
+            self.clock.tick(30)  # Mantiene la velocidad constante
+
+            # Actualiza la velocidad de caída y realiza la caída según el contador de frames
+            self._update_fall_speed()
+            self.frame_counter += 1
+            if self.frame_counter >= self.frames_per_drop:
+                self.frame_counter = 0
+                if not self.game_over_flag:
+                    if not self.current_piece.move_down(self.grid):
+                        self._handle_piece_landing("Soft Drop")
 
         pygame.quit()
 
