@@ -1,20 +1,26 @@
-# tetris-py
-tetris desarrollado en python como desafio para el proceso de seleccion en Inventures
+# Tetris-py
 
+Tetris desarrollado en Python como desafío para el proceso de selección en Inventures.
 
-# Supuestos
+## Supuestos
 
-## combos
-El contador de combos funciona en base a la cantidad de turnos sucesivos que logran
-eliminar una linea, el combo aumentará de acuerdo a la cantidad de lineas sucesivas
-eliminadas.
+### Combos
+El contador de combos funciona en base a la cantidad de turnos sucesivos que logran eliminar una línea. El combo aumentará de acuerdo a la cantidad de líneas sucesivas eliminadas.
 
-# Consideraciones tecnicas 
+## Consideraciones Técnicas
 
-El cuadro de input que emerge cuando un jugador obtiene un record superior en puntaje a los existentes puede tener
-problemas al actualizar lo escrito en él, sin embargo funciona correctamente, es necesario presionar la tecla enter 
-tras ingresar el nombre y el juego deberia retornar al menu principal donde se puede ver el ranking actualizado.
+El cuadro de input que emerge cuando un jugador obtiene un récord superior en puntaje a los existentes puede tener problemas al actualizar lo escrito en él; sin embargo, funciona correctamente. Es necesario presionar la tecla Enter tras ingresar el nombre y el juego debería retornar al menú principal donde se puede ver el ranking actualizado.
 
-# Ejecución
+## Ejecución
 
+Para ejecutar este código se requiere la versión de Python 3.11.7 y la librería pygame, la cual puede ser instalada fácilmente ejecutando el comando:
+
+```bash
+pip install -r requirements.txt
+```
+
+Una vez instalados estos componentes, se puede iniciar el juego ejecutando:
+```bash
+python main.py
+```
 
