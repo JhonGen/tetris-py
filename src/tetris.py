@@ -209,11 +209,8 @@ class Tetris:
 
         # Verificar si el total_score es mayor que algún puntaje en la lista de high scores
         if any(self.score.total_score > score for _, score in self.score.high_scores):
-            print("¡Nuevo récord!")
             self.new_high_score_flag = True  # Activa la flag de nuevo récord
             # Puedes realizar acciones adicionales si se supera un récord, si es necesario
-        else:
-            print("No superaste ningún récord.")
 
 
         self.game_over_flag = True

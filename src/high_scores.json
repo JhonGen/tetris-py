@@ -1,6 +1,14 @@
 {
   "scores": [
     {
+      "player": "ignacio",
+      "score": 11313
+    },
+    {
+      "player": " lucas",
+      "score": 7591
+    },
+    {
       "player": "adrian",
       "score": 7094
     },
@@ -31,14 +39,6 @@
     {
       "player": "Jugador5",
       "score": 3000
-    },
-    {
-      "player": "dafdfdfadfjosesito",
-      "score": 2956
-    },
-    {
-      "player": "josesito",
-      "score": 2956
     }
   ]
 }
