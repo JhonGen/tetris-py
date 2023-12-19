@@ -5,6 +5,7 @@ import tkinter as tk
 from src.controls_frame import ControlsFrame
 from src.tetris import Tetris
 from src.sound_manager import SoundManager
+from src.score_frame import ScoreFrame  # Agrega el módulo ScoreFrame
 
 class MainMenu:
     def __init__(self):
@@ -23,13 +24,19 @@ class MainMenu:
                     running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
-                        if 300 < event.pos[0] < 500 and 200 < event.pos[1] < 300:
+                        # Botón "Play"
+                        if 50 < event.pos[0] < 300 and 150 < event.pos[1] < 220:
                             self.sound_manager.stop_music()
                             self.start_game()
-                        elif 300 < event.pos[0] < 500 and 400 < event.pos[1] < 500:
+                        # Botón "Controls"
+                        elif 350 < event.pos[0] < 600 and 150 < event.pos[1] < 220:
                             self.show_controls()
-                        elif 275 < event.pos[0] < 525 and 500 < event.pos[1] < 600:
-                            self.exit_game()  # Llama a la función exit_game al presionar el botón "Exit"
+                        # Botón "High Scores"
+                        elif 50 < event.pos[0] < 300 and 250 < event.pos[1] < 320:
+                            self.show_high_scores()
+                        # Botón "Exit"
+                        elif 350 < event.pos[0] < 600 and 250 < event.pos[1] < 320:
+                            self.exit_game()
 
             self.screen.fill((0, 0, 0))
             self.draw_menu()
@@ -38,6 +45,7 @@ class MainMenu:
 
         pygame.quit()
 
+
     def show_controls(self):
         controls_window = tk.Tk()
         controls_window.title("Keypad")  # Cambia el título de la ventana emergente
@@ -45,39 +53,58 @@ class MainMenu:
         controls_frame.pack()
         controls_window.mainloop()
 
+    def show_high_scores(self):
+        scores_window = tk.Tk()
+        scores_window.title("High Scores")
+        scores_frame = ScoreFrame(scores_window)
+        scores_frame.pack()
+        scores_window.mainloop()
+
     def draw_menu(self):
-        font = pygame.font.Font("src/fonts/Tetris.ttf", 74)
-        title_font = pygame.font.Font("src/fonts/tetris-block-regular.ttf", 74)
+        font_size = 50
+        font = pygame.font.Font("src/fonts/Tetris.ttf", font_size)
+        title_font_size = 50
+        title_font = pygame.font.Font("src/fonts/tetris-block-regular.ttf", title_font_size)
 
         text_surface = title_font.render("TETRIS", True, (255, 255, 255))
         self.screen.blit(text_surface, (50, 50))  # Ajusta la posición del título
 
         # Incrementa el ancho de los botones horizontalmente
-        button_width, button_height = 375, 100
+        button_width, button_height = 250, 70
 
         # Botón "Play"
-        play_button = pygame.Rect(200, 200, button_width, button_height)
+        play_button = pygame.Rect(50, 150, button_width, button_height)
         pygame.draw.rect(self.screen, (0, 255, 0), play_button)
         pygame.draw.rect(self.screen, (0, 200, 0), play_button, border_radius=15)  # Bordes redondeados
 
         play_text = font.render("Play", True, (0, 0, 0))
-        self.screen.blit(play_text, (play_button.x + 60, play_button.y + 35))
+        self.screen.blit(play_text, (play_button.x + 30, play_button.y + 20))
 
         # Botón "Controls"
-        controls_button = pygame.Rect(200, 350, button_width, button_height)
+        controls_button = pygame.Rect(350, 150, button_width, button_height)
         pygame.draw.rect(self.screen, (0, 255, 0), controls_button)
         pygame.draw.rect(self.screen, (0, 200, 0), controls_button, border_radius=15)  # Bordes redondeados
 
         controls_text = font.render("Keypad", True, (0, 0, 0))
-        self.screen.blit(controls_text, (controls_button.x + 25, controls_button.y + 35))
+        self.screen.blit(controls_text, (controls_button.x + 10, controls_button.y + 20))
 
         # Botón "Exit"
-        exit_button = pygame.Rect(200, 500, button_width, button_height)
+        exit_button = pygame.Rect(350, 250, button_width, button_height)
         pygame.draw.rect(self.screen, (255, 0, 0), exit_button)
         pygame.draw.rect(self.screen, (200, 0, 0), exit_button, border_radius=15)  # Bordes redondeados
 
         exit_text = font.render("Exit", True, (0, 0, 0))
-        self.screen.blit(exit_text, (exit_button.x + 60, exit_button.y + 35))
+        self.screen.blit(exit_text, (exit_button.x + 30, exit_button.y + 20))
+
+        # Botón "High Scores"
+        scores_button = pygame.Rect(50, 250, button_width, button_height)
+        pygame.draw.rect(self.screen, (0, 0, 255), scores_button)
+        pygame.draw.rect(self.screen, (0, 0, 200), scores_button, border_radius=15)  # Bordes redondeados
+
+        scores_text = font.render(" Scores", True, (255, 255, 255))
+        self.screen.blit(scores_text, (scores_button.x - 10, scores_button.y + 20))
+
+
 
 
     def start_game(self):

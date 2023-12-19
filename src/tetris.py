@@ -21,8 +21,10 @@ class Tetris:
         self.FALL_SPEED = 500
         pygame.time.set_timer(pygame.USEREVENT + 1, self.FALL_SPEED)
         self.score = Score()
+        self.score.load_high_scores()
+        self.screen = pygame.display.set_mode((800, 600))
+        pygame.display.set_caption('Tetris')
         self.hard_drop_distance = 0
-
         self.border_size = 1
         self.game_over_flag = False
         self.held_piece = None
@@ -32,6 +34,7 @@ class Tetris:
         self.sound_manager = SoundManager()
         self.sound_manager.play_tetris_music(loop=True)
         self.game_over_music_played = False
+        self.new_high_score_flag = False
 
     def _generate_random_piece(self):
         pieces = [O_piece, I_piece, T_piece, Z_piece, J_piece, L_piece, S_piece]
@@ -77,9 +80,9 @@ class Tetris:
         next_pieces_surface = pygame.Surface((6 * cell_size, 18 * cell_size))  # Ajusta el tamaño del cuadro
         # Añade el título "Next Pieces"
         font = pygame.font.Font(None, 24)
-        next_pieces_title = font.render("Next Pieces", True, (255, 255, 255))
+        next_pieces_title = font.render("Next Pieces:", True, (255, 255, 255))
         screen.blit(next_pieces_title, (320, 40))  # Ajusta la posición según sea necesario
-        
+
         for i, next_piece in enumerate(list(self.next_pieces_queue)[:3]):
             next_piece_x = 320 + (3 * cell_size) - (next_piece.width * cell_size // 2 if hasattr(next_piece, 'width') else len(next_piece.shape[0]) * cell_size // 2)  # Centra la pieza en el cuadro
             next_piece_y = 150 + i * 120 + (3 * cell_size) - (next_piece.height * cell_size // 2 if hasattr(next_piece, 'height') else len(next_piece.shape) * cell_size // 2)
@@ -96,7 +99,7 @@ class Tetris:
             held_piece_surface = pygame.Surface((6 * cell_size, 6 * cell_size))
             # Añade el título "Held Piece"
             font = pygame.font.Font(None, 24)
-            held_piece_title = font.render("Held Piece", True, (255, 255, 255))
+            held_piece_title = font.render("Held Piece:", True, (255, 255, 255))
             screen.blit(held_piece_title, (520, 40))  # Ajusta la posición según sea necesario
             # Dibuja un borde alrededor del área de la pieza retenida
             pygame.draw.rect(screen, (255, 255, 255), (540 - self.border_size, 60 - self.border_size, 6 * cell_size + 2 * self.border_size, 6 * cell_size + 2 * self.border_size), self.border_size)
@@ -128,11 +131,12 @@ class Tetris:
         level_text = level_font.render(f"Level: {self.score.current_level}", True, (255, 255, 255))
         combo_text = font.render(f"Combo: {self.score.combo_counter}", True, (255, 255, 255))
         lines_text = font.render(f"Lines: {self.score.total_lines_cleared}", True, (255, 255, 255))
-
-        screen.blit(score_text, (500, 500))
-        screen.blit(level_text, (500, 450))
-        screen.blit(combo_text, (500, 550))
-        screen.blit(lines_text, (650, 550))
+        max_score_text = font.render(f"Max Score: { self.score.max_score}", True, (255,255,255))
+        screen.blit(score_text, (500, 400))
+        screen.blit(level_text, (500, 350))
+        screen.blit(combo_text, (500, 450))
+        screen.blit(lines_text, (650, 450))
+        screen.blit(max_score_text, (500, 550))
 
         if self.game_over_flag:
             self._draw_game_over(screen)
@@ -145,14 +149,72 @@ class Tetris:
         text_small1 = font_small.render("Press 'R' to restart", True, (255, 255, 255))
         text_small2 = font_small.render("Press 'ESC' to exit", True, (255, 255, 255))
 
-        screen.blit(text_large, (170, 250))
-        screen.blit(text_small1, (220, 350))
-        screen.blit(text_small2, (220, 400))
+        screen.blit(text_large, (100, 150))
+        screen.blit(text_small1, (150, 300))
+        screen.blit(text_small2, (150, 340))
+        
+        if self.new_high_score_flag:
+            self.handle_input_game_over(screen) 
+        
+    def handle_input_game_over(self, screen):
+        input_text = ""
+        input_rect = pygame.Rect(400, 350, 200, 50)  # Ajusta la posición del cuadro
+        color_inactive = pygame.Color('lightskyblue3')
+        color_active = pygame.Color('dodgerblue2')
+        color = color_inactive
+        active = False
+        font = pygame.font.Font(None, 36)
+        title_font = pygame.font.Font(None, 36)  # Agrega una fuente para el título
+
+        # Agrega el título
+        title_text = title_font.render("Enter your name", True, (255, 255, 255))
+        screen.blit(title_text, (input_rect.x, input_rect.y - 30))  # Ajusta la posición del título
+
+        text = font.render(input_text, True, color)
+        width = max(200, text.get_width() + 10)
+        input_rect.w = width
+
+        while self.new_high_score_flag:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        # Guarda el nuevo récord con el nombre del jugador
+                        updated = self.score.update_high_scores(input_text, self.score.total_score)
+                        if updated:
+                            self.score.save_high_scores()
+                        self.new_high_score_flag = False  # Desactiva la flag después de guardar
+                        self.go_to_menu()
+                    elif event.key == pygame.K_BACKSPACE:
+                        input_text = input_text[:-1]
+                    else:
+                        input_text += event.unicode
+                    text = font.render(input_text, True, color)
+                    width = max(200, text.get_width() + 10)
+                    input_rect.w = width
+
+            pygame.draw.rect(screen, color, input_rect, 2)
+            screen.blit(text, (input_rect.x + 5, input_rect.y + 5))
+
+            pygame.display.flip()
+            self.clock.tick(30)
+
 
     def game_over(self):
         if not self.game_over_music_played:
             self.sound_manager.play_game_over_music()
             self.game_over_music_played = True
+
+        # Verificar si el total_score es mayor que algún puntaje en la lista de high scores
+        if any(self.score.total_score > score for _, score in self.score.high_scores):
+            print("¡Nuevo récord!")
+            self.new_high_score_flag = True  # Activa la flag de nuevo récord
+            # Puedes realizar acciones adicionales si se supera un récord, si es necesario
+        else:
+            print("No superaste ningún récord.")
+
 
         self.game_over_flag = True
 
@@ -193,9 +255,6 @@ class Tetris:
         else:
             self.score.update_score(completed_lines, move_type, 0, self.hard_drop_distance)
 
-        print(f"Move type: {move_type}")
-        print(f"Hard drop distance: {self.hard_drop_distance}")
-        print(f"Lines cleared: {completed_lines}")
 
         self.current_piece = self.next_pieces_queue.popleft()  # Obtiene la siguiente pieza de la cola
         self.next_pieces_queue.append(self._generate_random_piece())  # Agrega una nueva pieza a la cola
@@ -221,8 +280,6 @@ class Tetris:
 
         final_position = self.current_piece.position
         self.hard_drop_distance = final_position[1] - original_position[1]
-        print(f"hard_drop_distance obtenida: {self.hard_drop_distance}")
-
         # Asegura que la pieza se coloque correctamente después del "Hard Drop"
         self._handle_piece_landing("Hard Drop")
 
