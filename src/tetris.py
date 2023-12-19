@@ -22,6 +22,7 @@ class Tetris:
         pygame.time.set_timer(pygame.USEREVENT + 1, self.FALL_SPEED)
         self.score = Score()
         self.score.load_high_scores()
+        self.best_score = self.score.high_scores[0]
         self.screen = pygame.display.set_mode((800, 600))
         pygame.display.set_caption('Tetris')
         self.hard_drop_distance = 0
@@ -131,12 +132,12 @@ class Tetris:
         level_text = level_font.render(f"Level: {self.score.current_level}", True, (255, 255, 255))
         combo_text = font.render(f"Combo: {self.score.combo_counter}", True, (255, 255, 255))
         lines_text = font.render(f"Lines: {self.score.total_lines_cleared}", True, (255, 255, 255))
-        max_score_text = font.render(f"Max Score: { self.score.max_score}", True, (255,255,255))
+        max_score_text = font.render(f"Max Score: { self.best_score}", True, (255,255,255))
         screen.blit(score_text, (500, 400))
         screen.blit(level_text, (500, 350))
         screen.blit(combo_text, (500, 450))
         screen.blit(lines_text, (650, 450))
-        screen.blit(max_score_text, (500, 550))
+        screen.blit(max_score_text, (350, 550))
 
         if self.game_over_flag:
             self._draw_game_over(screen)
