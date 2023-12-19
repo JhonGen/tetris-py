@@ -1,9 +1,6 @@
 # main.py
-import pygame
-from src.tetris import Tetris
-
-pygame.init()
+from src.main_menu import MainMenu  
 
 if __name__ == "__main__":
-    tetris_game = Tetris()
-    tetris_game.run()
+    main_menu = MainMenu()
+    main_menu.show_menu()
