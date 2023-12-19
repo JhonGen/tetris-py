@@ -24,3 +24,4 @@ Una vez instalados estos componentes, se puede iniciar el juego ejecutando:
 python main.py
 ```
 
+Tambien es posible ejecutar el juego en windows con un arhcivo .exe contenido en la carpeta dist.
